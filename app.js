@@ -6,44 +6,75 @@ const midtrans = require('./midtrans');
 
 const app = express();
 const port = process.env.PORT || 7860;
+
 app.use(bodyParser.json());
 app.use(cors());
 app.use(express.json());
-app.set('json spaces', 2); // atau gunakan jsonSpaces langsung
+app.set('json spaces', 2);
 
+function checkZerokeyHeader(req, res, next) {
+  const zerokey = req.header('ZEROKEY');
+  const expectedKey = process.env.ZEROKEY;
 
+  if (!zerokey) {
+    return res.status(403).json({ success: false, message: 'Header X-ZEROKEY dibutuhkan' });
+  }
+
+  if (zerokey !== expectedKey) {
+    return res.status(401).json({ success: false, message: 'X-ZEROKEY tidak valid' });
+  }
+
+  next();
+}
+
+// Route publik
 app.get('/', async (req, res) => {
   const response = {
     status: 200,
-	message: "Hello from backend, this is midtrans callback api for Zerocode",
+    message: "Hello from backend, this is midtrans callback api for Zerocode",
     author: "DitzzyAF",
     web: "https://zerocode.my.id" 
-  }
+  };
   res.json(response);
 });
 
+// Middleware untuk semua route /api
+app.use('/api', checkZerokeyHeader);
 
+// POST /api/pay
 app.post('/api/pay', async (req, res) => {
-  const { amount, trxid } = req.body;
-  if (!amount || !trxid) {
-    return res.status(400).json({ success: false, message: 'amount & trxid wajib diisi' });
+  try {
+    const { amount, trxid } = req.body;
+    if (!amount || !trxid) {
+      return res.status(400).json({ success: false, message: 'amount & trxid wajib diisi' });
+    }
+    const response = await midtrans.create(amount, trxid);
+    res.json(response);
+  } catch (err) {
+    res.status(500).json({ success: false, message: 'Terjadi kesalahan', error: err.message });
   }
-  const response = await midtrans.create(amount, trxid);
-  res.json(response);
 });
 
-// Cek status transaksi
+// GET /api/pay/:trxid
 app.get('/api/pay/:trxid', async (req, res) => {
-  const { trxid } = req.params;
-  const response = await midtrans.status(trxid);
-  res.json(response);
+  try {
+    const { trxid } = req.params;
+    const response = await midtrans.status(trxid);
+    res.json(response);
+  } catch (err) {
+    res.status(500).json({ success: false, message: 'Gagal mengambil status transaksi', error: err.message });
+  }
 });
 
-// Callback Midtrans
+// POST /api/pay/callback
 app.post('/api/pay/callback', async (req, res) => {
-  const notification = req.body;
-  const response = await midtrans.callback(notification);
-  res.json(response);
+  try {
+    const notification = req.body;
+    const response = await midtrans.callback(notification);
+    res.json(response);
+  } catch (err) {
+    res.status(500).json({ success: false, message: 'Callback gagal diproses', error: err.message });
+  }
 });
 
 app.listen(port, () => {
