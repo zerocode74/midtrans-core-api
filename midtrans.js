@@ -33,6 +33,15 @@ async function status(trxid) {
     return error.ApiResponse;
   }
 }
+async function cancel(trxid) {
+  try {
+    const data = await core.transaction.cancel(trxid)
+    return data;
+  } catch (error) {
+    console.error("Error fetching cancel status:", error);
+    return error.ApiResponse;
+  }
+}
 
 async function callback(notificationJson) {
   try {
@@ -65,6 +74,7 @@ async function callback(notificationJson) {
 
 module.exports = {
   create,
+  cancel,
   status,
   callback
 };

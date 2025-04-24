@@ -48,6 +48,18 @@ app.get('/api/pay/:trxid', async (req, res) => {
   }
 });
 
+app.post('/api/cancel', async (req, res) => {
+  try {
+    const {  trxid } = req.body;
+    if (!trxid) {
+      return res.status(400).json({ success: false, message: 'trxid wajib diisi' });
+    }
+    const response = await midtrans.cancel(trxid);
+    res.json(response);
+  } catch (err) {
+    res.status(500).json({ success: false, message: 'Terjadi kesalahan', error: err.message });
+  }
+});
 // POST /api/pay/callback
 app.post('/api/pay/callback', async (req, res) => {
   try {
