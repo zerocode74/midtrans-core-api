@@ -12,21 +12,6 @@ app.use(cors());
 app.use(express.json());
 app.set('json spaces', 2);
 
-function checkZerokeyHeader(req, res, next) {
-  const zerokey = req.header('ZEROKEY');
-  const expectedKey = process.env.ZEROKEY;
-
-  if (!zerokey) {
-    return res.status(403).json({ success: false, message: 'Header X-ZEROKEY dibutuhkan' });
-  }
-
-  if (zerokey !== expectedKey) {
-    return res.status(401).json({ success: false, message: 'X-ZEROKEY tidak valid' });
-  }
-
-  next();
-}
-
 // Route publik
 app.get('/', async (req, res) => {
   const response = {
@@ -37,9 +22,6 @@ app.get('/', async (req, res) => {
   };
   res.json(response);
 });
-
-// Middleware untuk semua route /api
-app.use('/api', checkZerokeyHeader);
 
 // POST /api/pay
 app.post('/api/pay', async (req, res) => {
